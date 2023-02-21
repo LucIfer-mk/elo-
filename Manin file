@@ -1,0 +1,131 @@
+// The Elo algorithm parameters
+const K = 32;  // The K-factor determines the speed of rating changes
+
+// The photo data
+const photos = [];
+for (let i = 1; i <= 100; i++) {
+  photos.push({
+    id: i,
+    rating: 1000,
+  });
+}
+
+// Retrieve the HTML elements
+const photoContainer = document.querySelector('.photos');
+const matchButton = document.querySelector('#match-button');
+const ultimatePhotoIdElement = document.querySelector('#ultimate-photo-id');
+const ultimatePhotoRatingElement = document.querySelector('#ultimate-photo-rating');
+
+let photo1, photo2;
+
+// Add the photos to the HTML container
+function renderPhotos() {
+  photoContainer.innerHTML = '';
+  if (photo1) {
+    const img1 = document.createElement('img');
+    img1.src = `photos/photo${photo1.id}.jpg`;
+    img1.alt = `Photo ${photo1.id}`;
+    img1.dataset.id = photo1.id;
+    img1.dataset.rating = photo1.rating;
+    img1.addEventListener('click', () => {
+      selectPhoto(img1);
+    });
+    img1.classList.add('active');
+    photoContainer.appendChild(img1);
+  }
+  if (photo2) {
+    const img2 = document.createElement('img');
+    img2.src = `photos/photo${photo2.id}.jpg`;
+    img2.alt = `Photo ${photo2.id}`;
+    img2.dataset.id = photo2.id;
+    img2.dataset.rating = photo2.rating;
+    img2.addEventListener('click', () => {
+      selectPhoto(img2);
+    });
+    photoContainer.appendChild(img2);
+  }
+}
+
+// Render the initial photos
+shufflePhotos();
+renderPhotos();
+
+// Add a click event listener to the match button
+matchButton.addEventListener('click', () => {
+  matchPhotos();
+});
+
+// Select a photo and highlight it
+function selectPhoto(photoElement) {
+  if (!photo1 || !photo2) {
+    alert('Please select another photo to match against.');
+    return;
+  }
+  if (!photoElement.classList.contains('active')) {
+    alert('Please select an active photo.');
+    return;
+  }
+  photoContainer.querySelectorAll('img').forEach((element) => {
+    element.classList.remove('active');
+  });
+  photoElement.classList.add('active');
+}
+
+// Shuffle the photos array and set photo1 and photo2
+function shufflePhotos() {
+  const shuffledPhotos = shuffleArray([...photos]);
+  photo1 = shuffledPhotos.shift();
+  photo2 = shuffledPhotos.shift();
+}
+
+// Match two photos and update their ratings
+function matchPhotos() {
+  // Retrieve the selected photos
+  const selectedPhotos = photoContainer.querySelectorAll('img.active');
+  if (selectedPhotos.length < 2) {
+    alert('Please select two photos to match.');
+    return;
+  }
+  const selectedPhoto1 = selectedPhotos[0];
+  const selectedPhoto2 = selectedPhotos[1];
+
+  // Retrieve the ratings of the selected photos
+  const rating1 = parseInt(selectedPhoto1.dataset.rating);
+  const rating2 = parseInt(selectedPhoto2.dataset.rating);
+
+  // Calculate the expected scores
+  const expectedScore1 = 1 / (1 + Math.pow(10, (rating2 - rating1) / 400));
+  const expectedScore2 = 1 / (1 + Math.pow(10, (rating1 - rating2) / 400));
+
+    // Update the ratings
+    const newRating1 = rating1 + K * (1 - expectedScore1);
+    const newRating2 = rating2 + K * (0 - expectedScore2);
+    selectedPhoto1.dataset.rating = newRating1;
+    selectedPhoto2.dataset.rating = newRating2;
+  
+    // Swap the photos and render them
+    swapPhotos();
+    renderPhotos();
+  }
+  
+  // Swap photo1 and photo2
+  function swapPhotos() {
+    photo1 = photo2;
+    photo2 = shuffledPhotos.shift();
+    if (!photo2) {
+      const highestRatedPhoto = photos.reduce((prev, curr) => (prev.rating > curr.rating) ? prev : curr);
+      ultimatePhotoIdElement.textContent = `#${highestRatedPhoto.id}`;
+      ultimatePhotoRatingElement.textContent = `${Math.round(highestRatedPhoto.rating)}`;
+      matchButton.disabled = true;
+    }
+  }
+  
+  // Shuffle the array using the Fisher-Yates shuffle algorithm
+  function shuffleArray(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [array[i], array[j]] = [array[j], array[i]];
+    }
+    return array;
+  }
+  
